@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sarthi AI — Your AI Travel Companion</title>
+    <meta name="description" content="Sarthi AI is an intelligent multi-agent travel planner that creates personalized trip plans with live flights, hotels, and day-by-day itineraries." />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+    <!-- Marked.js for Markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <!-- html2pdf.js for PDF export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js"></script>
+
+    <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+    <!-- Ambient background orbs -->
+    <div class="ambient-bg">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <!-- Main container -->
+    <div class="app-container">
+
+        <!-- Header -->
+        <header class="app-header" id="app-header">
+            <div class="logo-group">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="20" cy="20" r="18" stroke="url(#logo-grad)" stroke-width="2.5" fill="none" />
+                        <path d="M20 6 L20 34 M6 20 L34 20" stroke="url(#logo-grad)" stroke-width="1.5" opacity="0.3" />
+                        <path d="M12 14 L20 8 L28 14 L28 26 L20 32 L12 26Z" fill="url(#logo-grad)" opacity="0.15" />
+                        <path d="M20 12 L26 18 L20 28 L14 18Z" fill="url(#logo-grad)" opacity="0.6" />
+                        <circle cx="20" cy="20" r="3" fill="url(#logo-grad)" />
+                        <defs>
+                            <linearGradient id="logo-grad" x1="0" y1="0" x2="40" y2="40">
+                                <stop offset="0%" stop-color="#F59E0B" />
+                                <stop offset="100%" stop-color="#EF4444" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <div class="logo-text">
+                    <h1>Sarthi AI</h1>
+                    <span class="logo-tagline">Your AI Travel Companion</span>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="btn-icon" id="btn-new-chat" title="New Chat" aria-label="New Chat">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Chat area -->
+        <main class="chat-area" id="chat-area">
+
+            <!-- Welcome screen (shown when no messages) -->
+            <div class="welcome-screen" id="welcome-screen">
+                <div class="welcome-icon">
+                    <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="40" cy="40" r="36" stroke="url(#welcome-grad)" stroke-width="2" fill="none" opacity="0.3" />
+                        <circle cx="40" cy="40" r="24" stroke="url(#welcome-grad)" stroke-width="1.5" fill="none" opacity="0.2" />
+                        <path d="M28 36 C28 28, 40 20, 52 28 L40 52 L28 36Z" fill="url(#welcome-grad)" opacity="0.5" />
+                        <path d="M52 36 C52 28, 40 20, 28 28 L40 52 L52 36Z" fill="url(#welcome-grad)" opacity="0.3" />
+                        <circle cx="40" cy="36" r="4" fill="url(#welcome-grad)" />
+                        <defs>
+                            <linearGradient id="welcome-grad" x1="10" y1="10" x2="70" y2="70">
+                                <stop offset="0%" stop-color="#F59E0B" />
+                                <stop offset="100%" stop-color="#EF4444" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <h2 class="welcome-title">Where would you like to go?</h2>
+                <p class="welcome-subtitle">I'll find flights, hotels, and build your perfect itinerary.</p>
+
+                <div class="suggestion-chips">
+                    <button class="chip" data-query="Plan a 7 days Japan trip from India">
+                        <span class="chip-emoji">🇯🇵</span> 7 days Japan trip
+                    </button>
+                    <button class="chip" data-query="Plan a 5 days trip to Dubai from Delhi under budget">
+                        <span class="chip-emoji">🇦🇪</span> Budget Dubai trip
+                    </button>
+                    <button class="chip" data-query="Plan a 3 days Singapore trip from Mumbai including hotels">
+                        <span class="chip-emoji">🇸🇬</span> Singapore getaway
+                    </button>
+                    <button class="chip" data-query="Plan a 10 days Europe trip covering Paris and Rome from Delhi">
+                        <span class="chip-emoji">🇪🇺</span> Europe adventure
+                    </button>
+                </div>
+
+                <!-- About Sarthi AI Section -->
+                <div class="about-section" id="about-section">
+                    <div class="about-divider">
+                        <span class="about-divider-line"></span>
+                        <span class="about-divider-text">How Sarthi AI Works</span>
+                        <span class="about-divider-line"></span>
+                    </div>
+
+                    <div class="about-grid">
+                        <div class="about-card">
+                            <div class="about-card-icon about-icon-agents">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="3"/>
+                                    <circle cx="4" cy="6" r="2"/>
+                                    <circle cx="20" cy="6" r="2"/>
+                                    <circle cx="4" cy="18" r="2"/>
+                                    <circle cx="20" cy="18" r="2"/>
+                                    <path d="M6 7.5 L9.5 10.5 M14.5 10.5 L18 7.5 M9.5 13.5 L6 16.5 M14.5 13.5 L18 16.5"/>
+                                </svg>
+                            </div>
+                            <h3 class="about-card-title">Multi-Agent Pipeline</h3>
+                            <p class="about-card-desc">Four specialized AI agents collaborate — searching flights, finding hotels, crafting itineraries, and compiling your final plan.</p>
+                        </div>
+
+                        <div class="about-card">
+                            <div class="about-card-icon about-icon-flights">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>
+                                </svg>
+                            </div>
+                            <h3 class="about-card-title">Live Flight Data</h3>
+                            <p class="about-card-desc">Real-time flight schedules from AviationStack — with airline, terminal, gate, and status info for your route.</p>
+                        </div>
+
+                        <div class="about-card">
+                            <div class="about-card-icon about-icon-search">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="11" cy="11" r="8"/>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                                    <line x1="8" y1="11" x2="14" y2="11"/>
+                                    <line x1="11" y1="8" x2="11" y2="14"/>
+                                </svg>
+                            </div>
+                            <h3 class="about-card-title">Smart Web Search</h3>
+                            <p class="about-card-desc">Tavily-powered search finds top-rated hotels, attractions, and travel tips tailored to your destination.</p>
+                        </div>
+
+                        <div class="about-card">
+                            <div class="about-card-icon about-icon-pdf">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                    <polyline points="14 2 14 8 20 8"/>
+                                    <line x1="16" y1="13" x2="8" y2="13"/>
+                                    <line x1="16" y1="17" x2="8" y2="17"/>
+                                    <polyline points="10 9 9 9 8 9"/>
+                                </svg>
+                            </div>
+                            <h3 class="about-card-title">Export as PDF</h3>
+                            <p class="about-card-desc">Copy your travel plan or download it as a beautifully formatted PDF — ready to share or print.</p>
+                        </div>
+                    </div>
+
+                    <p class="about-footnote">Powered by <strong>LangGraph</strong> · <strong>Groq LLaMA 3.3</strong> · <strong>AviationStack</strong> · <strong>Tavily</strong></p>
+                </div>
+            </div>
+
+            <!-- Messages container -->
+            <div class="messages-container" id="messages-container"></div>
+
+        </main>
+
+        <!-- Input area -->
+        <footer class="input-area" id="input-area">
+            <form class="input-form" id="input-form">
+                <div class="input-wrapper">
+                    <textarea
+                        id="user-input"
+                        placeholder="Describe your dream trip..."
+                        rows="1"
+                        maxlength="1000"
+                        aria-label="Travel request input"
+                    ></textarea>
+                    <button type="submit" class="btn-send" id="btn-send" title="Send" aria-label="Send message">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </button>
+                </div>
+                <p class="input-hint">Sarthi AI uses live flight data &amp; web search to plan your trip.</p>
+            </form>
+        </footer>
+
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>

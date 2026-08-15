@@ -1,4 +1,5 @@
 from pathlib import Path
+import asyncio
 import traceback
 import uvicorn
 
@@ -21,13 +22,13 @@ app = FastAPI(
 
 app.mount(
     "/static",
-    StaticFiles(directory=str(BASE_DIR / "static")),
+    StaticFiles(directory=str(BASE_DIR / "frontend" / "static")),
     name="static"
 )
 
 
 templates = Jinja2Templates(
-    directory=str(BASE_DIR / "templates")
+    directory=str(BASE_DIR / "frontend" / "templates")
 )
 
 
@@ -61,7 +62,8 @@ async def travel_planner(request_data: TravelRequest):
                 }
             )
 
-        result = run_travel_agent(
+        result = await asyncio.to_thread(
+            run_travel_agent,
             user_input=user_message,
             thread_id=request_data.thread_id
         )
