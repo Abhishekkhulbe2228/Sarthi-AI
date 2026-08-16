@@ -7,9 +7,10 @@ load_dotenv()
 os.environ["SSL_CERT_FILE"] = certifi.where()
 os.environ["REQUESTS_CA_BUNDLE"] = certifi.where()
 
-from typing import TypedDict, Annotated
-import operator
+from typing import TypedDict, Annotated, Any
+import operator 
 import uuid
+import json
 import asyncio
 import psycopg
 from psycopg.rows import dict_row
@@ -53,36 +54,88 @@ llm = ChatGroq(
     api_key=GROQ_API_KEY
 )
 
-# =========================
-# State
-# =========================
 
-class TravelState(TypedDict):
+# =========================
+# State - original fields kept, new control fields added
+# =========================
+class TravelState(TypedDict, total=False):
     messages: Annotated[list[AnyMessage], operator.add]
     user_query: str
+
+    # Supervisor + guardrail state
+    guardrail_allowed: bool
+    guardrail_reason: str
+    selected_agents: list[str]
+    trip_constraints: dict[str, Any]
+    supervisor_reasoning: str
+
+    # Original specialist results
     flight_results: str
     hotel_results: str
-    itinerary: str
-    llm_calls: int
     weather_results: str
+    itinerary: str
+
+    # New budget + HITL state
+    budget_results: str
+    approval_request: str
+    approved: bool
+    human_feedback: str
+    final_response: str
+
+    llm_calls: int
 
 # =========================
-# Flight Agent
+# Shared helpers
 # =========================
+KNOWN_AGENTS = {
+    "flight_agent",
+    "hotel_agent",
+    "weather_agent",
+    "budget_agent",
+    "itinerary_agent",
+}
 
-# def flight_agent(state: TravelState):
-#     query = state["user_query"]
-#     flight_data = search_flights(query)
+AGENT_ORDER = [
+    "flight_agent",
+    "hotel_agent",
+    "weather_agent",
+    "budget_agent",
+    "itinerary_agent",
+]
 
-#     return {
-#         "flight_results": flight_data,
-#         "messages": [
-#             AIMessage(content="Flight results fetched.")
-#         ],
-#         "llm_calls": state.get("llm_calls", 0) + 1
-#     }
+def _llm_text(system_prompt: str, user_prompt: str) -> str:
+    response = llm.invoke(
+        [
+            SystemMessage(content=system_prompt),
+            HumanMessage(content=user_prompt),
+        ]
+    )
+    return str(response.content)
 
-# Flight Tool Router Prompt
+def _json_from_llm(text: str) -> dict[str, Any]:
+    """Extract the first complete JSON object returned by the model."""
+    start = text.find("{")
+    end = text.rfind("}")
+
+    if start == -1 or end == -1 or end < start:
+        raise ValueError("The model did not return a JSON object.")
+
+    return json.loads(text[start : end + 1])
+
+def _empty_constraints() -> dict[str, Any]:
+    return {
+        "destination": "",
+        "origin": "",
+        "duration": "",
+        "budget": "",
+        "travel_style": "",
+        "special_preferences": [],
+    }
+
+    
+# =========================
+# Flight Agent - original behavior kept
+# =========================
 FLIGHT_AGENT_PROMPT = """
 You are a travel flight expert.
 
@@ -107,8 +160,6 @@ Generate:
 
 Return concise travel guidance.
 """
-
-
 
 
 # Flight Agent
