@@ -14,6 +14,9 @@
     const btnSend        = document.getElementById("btn-send");
     const btnNewChat     = document.getElementById("btn-new-chat");
     const chips          = document.querySelectorAll(".chip");
+    const btnThemeToggle = document.getElementById("btn-theme-toggle");
+    const sunIcon        = btnThemeToggle.querySelector(".sun-icon");
+    const moonIcon       = btnThemeToggle.querySelector(".moon-icon");
 
     // ---- State ----
     let threadId = null;
@@ -34,6 +37,9 @@
         userInput.addEventListener("input", autoResize);
         userInput.addEventListener("keydown", handleKeyDown);
 
+        // Initialize Theme
+        initTheme();
+
         chips.forEach((chip) => {
             chip.addEventListener("click", () => {
                 const query = chip.getAttribute("data-query");
@@ -45,6 +51,31 @@
         });
 
         userInput.focus();
+    }
+
+    // ---- Theme Toggling ----
+    function initTheme() {
+        const savedTheme = localStorage.getItem("sarthi-theme") || "dark";
+        setTheme(savedTheme);
+
+        btnThemeToggle.addEventListener("click", () => {
+            const currentTheme = document.documentElement.getAttribute("data-theme") || "dark";
+            const newTheme = currentTheme === "dark" ? "light" : "dark";
+            setTheme(newTheme);
+        });
+    }
+
+    function setTheme(theme) {
+        if (theme === "light") {
+            document.documentElement.setAttribute("data-theme", "light");
+            sunIcon.classList.add("hidden");
+            moonIcon.classList.remove("hidden");
+        } else {
+            document.documentElement.removeAttribute("data-theme");
+            sunIcon.classList.remove("hidden");
+            moonIcon.classList.add("hidden");
+        }
+        localStorage.setItem("sarthi-theme", theme);
     }
 
     // ---- Auto-resize Textarea ----
