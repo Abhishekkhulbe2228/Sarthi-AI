@@ -9,7 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
-from backend import run_travel_agent
+from backend import run_travel_agent, resume_travel_agent
 
 import nest_asyncio
 nest_asyncio.apply()
@@ -40,6 +40,12 @@ templates = Jinja2Templates(
 class TravelRequest(BaseModel):
     message: str
     thread_id: str | None = None
+
+
+class ResumeRequest(BaseModel):
+    thread_id: str
+    approved: bool
+    feedback: str = ""
 
 
 
@@ -77,16 +83,81 @@ async def travel_planner(request_data: TravelRequest):
                 "success": True,
                 "thread_id": result["thread_id"],
                 "answer": result["answer"],
+                "requires_approval": result["requires_approval"],
+                "approval_request": result["approval_request"],
                 "flight_results": result["flight_results"],
                 "hotel_results": result["hotel_results"],
                 "weather_results": result["weather_results"],
+                "budget_results": result["budget_results"],
                 "itinerary": result["itinerary"],
+                "selected_agents": result["selected_agents"],
+                "trip_constraints": result["trip_constraints"],
+                "supervisor_reasoning": result["supervisor_reasoning"],
+                "guardrail_allowed": result["guardrail_allowed"],
+                "guardrail_reason": result["guardrail_reason"],
+                "approved": result["approved"],
+                "human_feedback": result["human_feedback"],
                 "llm_calls": result["llm_calls"],
             }
         )
 
     except Exception as e:
         print("ERROR:", e)
+        traceback.print_exc()
+
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "error": str(e)
+            }
+        )
+
+
+@app.post("/api/resume")
+async def resume_planner(request_data: ResumeRequest):
+    try:
+        if not request_data.thread_id:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "success": False,
+                    "error": "Thread ID is required to resume execution."
+                }
+            )
+
+        result = await asyncio.to_thread(
+            resume_travel_agent,
+            thread_id=request_data.thread_id,
+            approved=request_data.approved,
+            feedback=request_data.feedback
+        )
+
+        return JSONResponse(
+            content={
+                "success": True,
+                "thread_id": result["thread_id"],
+                "answer": result["answer"],
+                "requires_approval": result["requires_approval"],
+                "approval_request": result["approval_request"],
+                "flight_results": result["flight_results"],
+                "hotel_results": result["hotel_results"],
+                "weather_results": result["weather_results"],
+                "budget_results": result["budget_results"],
+                "itinerary": result["itinerary"],
+                "selected_agents": result["selected_agents"],
+                "trip_constraints": result["trip_constraints"],
+                "supervisor_reasoning": result["supervisor_reasoning"],
+                "guardrail_allowed": result["guardrail_allowed"],
+                "guardrail_reason": result["guardrail_reason"],
+                "approved": result["approved"],
+                "human_feedback": result["human_feedback"],
+                "llm_calls": result["llm_calls"],
+            }
+        )
+
+    except Exception as e:
+        print("ERROR ON RESUME:", e)
         traceback.print_exc()
 
         return JSONResponse(

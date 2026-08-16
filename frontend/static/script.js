@@ -24,10 +24,12 @@
 
     // ---- Pipeline Steps Definition ----
     const PIPELINE_STEPS = [
-        { id: "flight",    label: "Searching live flights",       icon: "✈️" },
-        { id: "hotel",     label: "Finding hotel options",        icon: "🏨" },
-        { id: "itinerary", label: "Building your itinerary",      icon: "📋" },
-        { id: "final",     label: "Compiling final travel plan",  icon: "✨" },
+        { id: "supervisor", label: "Supervisor routing & guardrails", icon: "⚙️" },
+        { id: "flight",     label: "Searching live flights",          icon: "✈️" },
+        { id: "hotel",      label: "Finding hotel options",           icon: "🏨" },
+        { id: "weather",    label: "Fetching OpenWeather forecast",    icon: "🌤️" },
+        { id: "budget",     label: "Analyzing budget feasibility",     icon: "💰" },
+        { id: "itinerary",  label: "Drafting travel itinerary",       icon: "📋" },
     ];
 
     // ---- Initialize ----
@@ -113,7 +115,7 @@
         userInput.style.height = "auto";
 
         // Show loading pipeline
-        const loadingEl = appendLoadingPipeline();
+        const loadingEl = appendLoadingPipeline("Planning your trip");
 
         // Start simulated pipeline progress
         const pipelineTimer = animatePipeline(loadingEl);
@@ -134,13 +136,93 @@
     // ---- Append AI Message ----
     let responseCounter = 0;
 
-    function appendAIMessage(markdownText) {
+    function appendAIMessage(dataPayload) {
         responseCounter++;
         const responseId = `response-${responseCounter}`;
         const div = document.createElement("div");
         div.className = "message message-ai";
         div.setAttribute("data-response-id", responseId);
+
+        let markdownText = "";
+        let requiresApproval = false;
+        let approvalRequest = "";
+        let selectedAgents = [];
+        let guardrailAllowed = true;
+        let guardrailReason = "";
+
+        if (typeof dataPayload === "string") {
+            markdownText = dataPayload;
+        } else if (dataPayload && typeof dataPayload === "object") {
+            markdownText = dataPayload.answer || dataPayload.itinerary || "";
+            requiresApproval = Boolean(dataPayload.requires_approval);
+            approvalRequest = dataPayload.approval_request || "";
+            selectedAgents = dataPayload.selected_agents || [];
+            guardrailAllowed = dataPayload.guardrail_allowed !== false;
+            guardrailReason = dataPayload.guardrail_reason || "";
+        }
+
         div.setAttribute("data-raw-markdown", markdownText);
+
+        // Build metadata pills HTML
+        let metadataHTML = "";
+        if (selectedAgents && selectedAgents.length > 0) {
+            const agentPills = selectedAgents.map(agent => `<span class="agent-badge">⚡ ${escapeHtml(agent)}</span>`).join(" ");
+            metadataHTML = `
+                <div class="metadata-bar">
+                    <span class="metadata-label">Active Agents:</span>
+                    ${agentPills}
+                </div>
+            `;
+        }
+
+        // Build Guardrail Warning Card HTML if blocked
+        let guardrailHTML = "";
+        if (!guardrailAllowed) {
+            guardrailHTML = `
+                <div class="guardrail-card">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                        <line x1="12" y1="9" x2="12" y2="13"/>
+                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                    <div>
+                        <strong>Input Guardrail Alert:</strong> ${escapeHtml(guardrailReason || "Request redirected to travel scope.")}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Build HITL Approval Card HTML if graph paused for approval
+        let approvalCardHTML = "";
+        if (requiresApproval) {
+            approvalCardHTML = `
+                <div class="approval-card" id="approval-card-${responseId}">
+                    <div class="approval-header">
+                        <span class="approval-badge">Human Review Required</span>
+                        <span class="approval-title">Review Draft Itinerary</span>
+                    </div>
+                    <p class="approval-desc">${escapeHtml(approvalRequest || "Please review the generated draft itinerary. Approve it to finalize your travel plan, or request custom revisions.")}</p>
+                    <div class="approval-actions">
+                        <button class="btn-approve" id="btn-approve-${responseId}" onclick="window.__sarthi.handleApproval('${responseId}', true)">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                            Approve Itinerary
+                        </button>
+                        <button class="btn-revision-toggle" onclick="window.__sarthi.toggleRevisionBox('${responseId}')">
+                            ✏️ Request Revision
+                        </button>
+                    </div>
+                    <div class="revision-box hidden" id="revision-box-${responseId}">
+                        <textarea class="revision-textarea" id="revision-text-${responseId}" placeholder="Describe feedback for revision (e.g. 'Prefer luxury hotels', 'Focus more on local food and history', 'Make Day 2 lighter')..."></textarea>
+                        <button class="btn-submit-revision" id="btn-submit-rev-${responseId}" onclick="window.__sarthi.handleApproval('${responseId}', false)">
+                            Submit Revision Request
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
         div.innerHTML = `
             <div class="message-ai-header">
                 <div class="ai-avatar">
@@ -150,7 +232,11 @@
                 </div>
                 <span class="ai-name">Sarthi AI</span>
             </div>
-            <div class="message-content" id="${responseId}">${renderMarkdown(markdownText)}
+            <div class="message-content" id="${responseId}">
+                ${metadataHTML}
+                ${guardrailHTML}
+                ${renderMarkdown(markdownText)}
+                ${approvalCardHTML}
                 <div class="response-actions">
                     <button class="action-btn btn-copy" onclick="window.__sarthi.copyResponse('${responseId}')" title="Copy to clipboard">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -172,6 +258,87 @@
         `;
         messagesBox.appendChild(div);
         scrollToBottom();
+    }
+
+    // ---- Toggle Revision Box ----
+    function toggleRevisionBox(responseId) {
+        const box = document.getElementById(`revision-box-${responseId}`);
+        if (box) {
+            box.classList.toggle("hidden");
+            if (!box.classList.contains("hidden")) {
+                const textarea = document.getElementById(`revision-text-${responseId}`);
+                if (textarea) textarea.focus();
+            }
+        }
+    }
+
+    // ---- Handle Approval / Revision Resume ----
+    async function handleApproval(responseId, approved) {
+        if (!threadId || isProcessing) return;
+
+        let feedback = "";
+        if (!approved) {
+            const textarea = document.getElementById(`revision-text-${responseId}`);
+            feedback = textarea ? textarea.value.trim() : "";
+        }
+
+        // Disable buttons in card
+        const card = document.getElementById(`approval-card-${responseId}`);
+        if (card) {
+            card.style.opacity = "0.6";
+            card.style.pointerEvents = "none";
+        }
+
+        isProcessing = true;
+        btnSend.disabled = true;
+
+        // Show loading pipeline for graph resumption
+        const loadingTitle = approved ? "Finalizing approved itinerary" : "Applying revision feedback";
+        const loadingEl = appendLoadingPipeline(loadingTitle);
+        const pipelineTimer = animatePipeline(loadingEl);
+
+        try {
+            const response = await fetch("/api/resume", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    thread_id: threadId,
+                    approved: approved,
+                    feedback: feedback,
+                }),
+            });
+
+            const data = await response.json();
+
+            clearInterval(pipelineTimer);
+
+            if (data.success) {
+                completePipeline(loadingEl);
+                setTimeout(() => {
+                    loadingEl.remove();
+                    if (card) card.remove(); // Remove approval card from draft message
+                    appendAIMessage(data);
+                }, 600);
+            } else {
+                loadingEl.remove();
+                if (card) {
+                    card.style.opacity = "1";
+                    card.style.pointerEvents = "auto";
+                }
+                appendErrorMessage(data.error || "Failed to resume trip plan.");
+            }
+        } catch (err) {
+            clearInterval(pipelineTimer);
+            loadingEl.remove();
+            if (card) {
+                card.style.opacity = "1";
+                card.style.pointerEvents = "auto";
+            }
+            appendErrorMessage(err.message || "Network error while processing approval.");
+        } finally {
+            isProcessing = false;
+            btnSend.disabled = false;
+        }
     }
 
     // ---- Append Error Message ----
@@ -198,9 +365,10 @@
     }
 
     // ---- Loading Pipeline ----
-    function appendLoadingPipeline() {
+    function appendLoadingPipeline(titleText) {
         const div = document.createElement("div");
         div.className = "message message-ai loading-container";
+        const title = titleText || "Planning your trip";
 
         let stepsHTML = "";
         PIPELINE_STEPS.forEach((step, i) => {
@@ -226,7 +394,7 @@
                 <span class="ai-name">Sarthi AI</span>
             </div>
             <div class="agent-pipeline">
-                <div class="pipeline-title">Planning your trip</div>
+                <div class="pipeline-title">${escapeHtml(title)}</div>
                 ${stepsHTML}
                 <div class="thinking-dots">
                     <span>Working</span>
@@ -272,7 +440,7 @@
             }
 
             scrollToBottom();
-        }, 4000); // ~4s per step to match typical API response time
+        }, 3000);
 
         return timer;
     }
@@ -316,7 +484,7 @@
                 // Small delay to show completion, then show result
                 setTimeout(() => {
                     loadingEl.remove();
-                    appendAIMessage(data.answer);
+                    appendAIMessage(data);
                 }, 600);
             } else {
                 loadingEl.remove();
@@ -431,13 +599,15 @@
             label.textContent = "Generating...";
         }
 
-        // Create a clean clone for PDF (without action buttons)
+        // Create a clean clone for PDF (without action buttons or approval card)
         const pdfContent = document.createElement("div");
         pdfContent.innerHTML = messageEl.innerHTML;
 
-        // Remove action buttons from the clone
+        // Remove action buttons and approval card from the clone
         const actionsEl = pdfContent.querySelector(".response-actions");
         if (actionsEl) actionsEl.remove();
+        const approvalEl = pdfContent.querySelector(".approval-card");
+        if (approvalEl) approvalEl.remove();
 
         // Add branding header
         const header = document.createElement("div");
@@ -545,6 +715,8 @@
     window.__sarthi = {
         copyResponse,
         downloadPDF,
+        toggleRevisionBox,
+        handleApproval,
     };
 
     // ---- Boot ----

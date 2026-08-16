@@ -16,9 +16,12 @@ import psycopg
 from psycopg.rows import dict_row
 
 from langgraph.graph import StateGraph, START, END
-from langgraph.interrupt import interrupt
+try:
+    from langgraph.types import Command, interrupt
+except ImportError:
+    from langgraph.types import Command
+    from langgraph.interrupt import interrupt
 from langgraph.checkpoint.postgres import PostgresSaver
-from langgraph.types import Command
 from langchain_core.messages import (
     AnyMessage,
     HumanMessage,
