@@ -16,6 +16,7 @@ import psycopg
 from psycopg.rows import dict_row
 
 from langgraph.graph import StateGraph, START, END
+from langgraph.interrupt import interrupt
 from langgraph.checkpoint.postgres import PostgresSaver
 from langchain_core.messages import (
     AnyMessage,
@@ -502,30 +503,76 @@ Create a clear draft that is ready for human review.
     }
 
 # =========================
-# Final Response Agent
+# Human-in-the-Loop approval
 # =========================
+def human_approval_agent(state: TravelState):
+    # Do not wrap interrupt() in try/except. LangGraph uses it to pause execution.
+    review = interrupt(
+        {
+            "question": "Do you approve this itinerary?",
+            "draft_itinerary": state.get("itinerary", ""),
+            "approval_request": state.get("approval_request", ""),
+            "selected_agents": state.get("selected_agents", []),
+            "supervisor_reasoning": state.get("supervisor_reasoning", ""),
+            "expected_response": {
+                "approved": True,
+                "feedback": "Optional revision feedback",
+            },
+        }
+    )
 
+    approved = bool(review.get("approved", False))
+    human_feedback = str(review.get("feedback", "")).strip()
+
+    return {
+        "approved": approved,
+        "human_feedback": human_feedback,
+        "messages": [AIMessage(content="Human approval step completed.")],
+    }
+
+
+# =========================
+# Final Response Agent - original format kept, HITL feedback added
+# =========================
 def final_agent(state: TravelState):
+    if state.get("approved", False):
+        review_instruction = (
+            "The user approved the draft. Preserve its decisions while polishing it."
+        )
+    else:
+        review_instruction = f"""
+The user requested a revision. Apply this feedback carefully:
+{state.get('human_feedback', '') or 'Improve the draft before finalizing it.'}
+"""
+
     final_prompt = f"""
 Generate the final travel response for the user.
+
+Human Review:
+{review_instruction}
 
 User Request:
 {state['user_query']}
 
+Supervisor Constraints:
+{state.get('trip_constraints', {})}
+
 Flights:
-{state['flight_results']}
+{state.get('flight_results', '')}
 
 Hotels:
-{state['hotel_results']}
+{state.get('hotel_results', '')}
 
 Weather:
-{state['weather_results']}
+{state.get('weather_results', '')}
 
-Itinerary:
-{state['itinerary']}
+Budget Analysis:
+{state.get('budget_results', '')}
+
+Draft Itinerary:
+{state.get('itinerary', '')}
 
 Format the final answer beautifully using these sections:
-
 1. Trip Summary
 2. Flight Information
 3. Hotel Suggestions
@@ -536,19 +583,27 @@ Format the final answer beautifully using these sections:
 
 Important:
 - Be clear and practical.
-- Mention that live flight API may not provide ticket prices if pricing is unavailable.
+- Mention that live flight APIs may not provide ticket prices when pricing is unavailable.
+- Include weather-based travel advice.
 - Keep the response useful for real travel planning.
+- Incorporate the human feedback when revision was requested.
 """
 
-    response = llm.invoke([
-        SystemMessage(content="You are a professional AI travel booking assistant."),
-        HumanMessage(content=final_prompt)
-    ])
+    response = llm.invoke(
+        [
+            SystemMessage(
+                content="You are a professional AI travel booking assistant."
+            ),
+            HumanMessage(content=final_prompt),
+        ]
+    )
 
     return {
+        "final_response": response.content,
         "messages": [response],
-        "llm_calls": state.get("llm_calls", 0) + 1
+        "llm_calls": state.get("llm_calls", 0) + 1,
     }
+
 
 
 # =========================
