@@ -14,6 +14,8 @@
     const btnSend        = document.getElementById("btn-send");
     const btnNewChat     = document.getElementById("btn-new-chat");
     const chips          = document.querySelectorAll(".chip");
+    const btnPlanTrip    = document.getElementById("btn-plan-trip");
+    const destinationInput = document.getElementById("destination-input");
     const btnThemeToggle = document.getElementById("btn-theme-toggle");
     const sunIcon        = btnThemeToggle.querySelector(".sun-icon");
     const moonIcon       = btnThemeToggle.querySelector(".moon-icon");
@@ -51,6 +53,16 @@
                 }
             });
         });
+
+        if (btnPlanTrip) {
+            btnPlanTrip.addEventListener("click", () => {
+                const destination = destinationInput ? destinationInput.value.trim() : "";
+                if (destination && !isProcessing) {
+                    userInput.value = `Plan a round trip from Delhi to ${destination} for 2 travellers. Include flights, hotels, weather, and a personalized itinerary.`;
+                    handleSubmit(new Event("submit"));
+                }
+            });
+        }
 
         userInput.focus();
     }

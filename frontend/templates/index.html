@@ -92,7 +92,33 @@
         <main class="chat-area" id="chat-area">
 
             <!-- Welcome screen (shown when no messages) -->
-            <div class="welcome-screen" id="welcome-screen">
+            <div class="welcome-screen travel-home" id="welcome-screen">
+                <section class="travel-hero" aria-labelledby="hero-title">
+                    <p class="eyebrow"><span class="status-dot"></span> AI-powered travel planning</p>
+                    <h2 class="welcome-title" id="hero-title">Your next journey,<br><em>beautifully planned.</em></h2>
+                    <p class="welcome-subtitle">Compare flights, discover stays, and get a personalized itinerary in one thoughtful conversation.</p>
+                    <div class="booking-card" aria-label="Plan a trip">
+                        <div class="booking-tabs"><button class="booking-tab active" type="button">Round trip</button><button class="booking-tab" type="button">One way</button><span class="booking-tag">Smart price insights</span></div>
+                        <div class="booking-fields">
+                            <label class="booking-field"><span class="field-label">From</span><span class="field-value"><b>Delhi</b><small>DEL, India</small></span></label>
+                            <button class="swap-route" type="button" aria-label="Swap departure and arrival">↔</button>
+                            <label class="booking-field"><span class="field-label">Where to?</span><input id="destination-input" type="text" value="Tokyo" aria-label="Destination" /><small>Japan</small></label>
+                            <label class="booking-field date-field"><span class="field-label">When</span><span class="field-value"><b>Flexible dates</b><small>Choose your perfect time</small></span></label>
+                            <label class="booking-field traveller-field"><span class="field-label">Travellers</span><span class="field-value"><b>2 travellers</b><small>Economy</small></span></label>
+                            <button class="planner-submit" id="btn-plan-trip" type="button">Plan my trip <span>→</span></button>
+                        </div>
+                    </div>
+                    <div class="travel-proof"><span>✦ Live flight intelligence</span><i></i><span>✦ Curated stays</span><i></i><span>✦ Built for Indian travellers</span></div>
+                </section>
+                <section class="popular-section" aria-labelledby="popular-title">
+                    <div class="section-heading"><div><p class="section-kicker">TRAVEL INSPIRATION</p><h3 id="popular-title">Trending escapes</h3></div><span>Handpicked for you</span></div>
+                    <div class="destination-grid">
+                        <button class="destination-card destination-bali chip" data-query="Plan a 6 day Bali trip from Delhi for 2 people including flights and hotels"><span class="destination-overlay"></span><span class="destination-copy"><small>TROPICAL ESCAPE</small><strong>Bali</strong><em>From ₹42,000</em></span><span class="card-arrow">↗</span></button>
+                        <button class="destination-card destination-kyoto chip" data-query="Plan a 7 day Japan trip from Delhi covering Tokyo and Kyoto"><span class="destination-overlay"></span><span class="destination-copy"><small>CULTURAL JOURNEY</small><strong>Japan</strong><em>From ₹68,000</em></span><span class="card-arrow">↗</span></button>
+                        <button class="destination-card destination-swiss chip" data-query="Plan a 8 day Switzerland trip from Mumbai including scenic train travel"><span class="destination-overlay"></span><span class="destination-copy"><small>ALPINE RETREAT</small><strong>Switzerland</strong><em>From ₹95,000</em></span><span class="card-arrow">↗</span></button>
+                    </div>
+                </section>
+                <section class="travel-benefits" aria-label="Sarthi benefits"><div><span class="benefit-icon">✈</span><h3>Smarter flight choices</h3><p>Live data helps you choose the route that makes sense.</p></div><div><span class="benefit-icon">✦</span><h3>Trips made personal</h3><p>Every day shaped around your pace, interests, and budget.</p></div><div><span class="benefit-icon">⌘</span><h3>Everything in one plan</h3><p>Flights, stays, weather and itineraries—ready to share.</p></div></section>
                 <div class="welcome-icon">
                     <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <circle cx="40" cy="40" r="36" stroke="url(#welcome-grad)" stroke-width="2" fill="none" opacity="0.3" />
